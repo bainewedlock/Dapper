@@ -68,7 +68,8 @@ namespace Dapper.Contrib.Extensions
                 ["npgsqlconnection"] = new PostgresAdapter(),
                 ["sqliteconnection"] = new SQLiteAdapter(),
                 ["mysqlconnection"] = new MySqlAdapter(),
-                ["fbconnection"] = new FbAdapter()
+                ["fbconnection"] = new FbAdapter(),
+                ["idb2connection"] = new iDB2Adapter()
             };
 
         private static List<PropertyInfo> ComputedPropertiesCache(Type type)
@@ -1127,6 +1128,51 @@ public partial class FbAdapter : ISqlAdapter
         idp.SetValue(entityToInsert, Convert.ChangeType(id, idp.PropertyType), null);
 
         return Convert.ToInt32(id);
+    }
+
+    /// <summary>
+    /// Adds the name of a column.
+    /// </summary>
+    /// <param name="sb">The string builder  to append to.</param>
+    /// <param name="columnName">The column name.</param>
+    public void AppendColumnName(StringBuilder sb, string columnName)
+    {
+        sb.AppendFormat("{0}", columnName);
+    }
+
+    /// <summary>
+    /// Adds a column equality to a parameter.
+    /// </summary>
+    /// <param name="sb">The string builder  to append to.</param>
+    /// <param name="columnName">The column name.</param>
+    public void AppendColumnNameEqualsValue(StringBuilder sb, string columnName)
+    {
+        sb.AppendFormat("{0} = @{1}", columnName, columnName);
+    }
+}
+
+/// <summary>
+/// The SQL adapter for IBM iSeries.
+/// </summary>
+public partial class iDB2Adapter : ISqlAdapter
+{
+    /// <summary>
+    /// Inserts <paramref name="entityToInsert"/> into the database, returning the Id of the row created.
+    /// </summary>
+    /// <param name="connection">The connection to use.</param>
+    /// <param name="transaction">The transaction to use.</param>
+    /// <param name="commandTimeout">The command timeout to use.</param>
+    /// <param name="tableName">The table to insert into.</param>
+    /// <param name="columnList">The columns to set with this insert.</param>
+    /// <param name="parameterList">The parameters to set for this insert.</param>
+    /// <param name="keyProperties">The key columns in this table.</param>
+    /// <param name="entityToInsert">The entity to insert.</param>
+    /// <returns>The Id of the row created.</returns>
+    public int Insert(IDbConnection connection, IDbTransaction transaction, int? commandTimeout, string tableName, string columnList, string parameterList, IEnumerable<PropertyInfo> keyProperties, object entityToInsert)
+    {
+        var cmd = $"insert into {tableName} ({columnList}) values ({parameterList})";
+        connection.Execute(cmd, entityToInsert, transaction, commandTimeout);
+        return -1;
     }
 
     /// <summary>
